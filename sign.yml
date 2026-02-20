@@ -1,0 +1,49 @@
+name: Sign APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate Keystore
+        run: |
+          keytool -genkeypair \
+            -alias scanexpired \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -keystore keystore.jks \
+            -storepass password123 \
+            -keypass password123 \
+            -dname "CN=ScanExpired, OU=Warehouse, O=Company, L=KL, S=KL, C=MY"
+
+      - name: Download unsigned APK from artifact
+        run: |
+          curl -L -o app-unsigned.apk "https://github.com/${{ github.repository }}/raw/main/ScanExpired-unsigned.apk"
+
+      - name: Sign APK
+        run: |
+          jarsigner \
+            -verbose \
+            -sigalg SHA256withRSA \
+            -digestalg SHA-256 \
+            -keystore keystore.jks \
+            -storepass password123 \
+            -keypass password123 \
+            app-unsigned.apk \
+            scanexpired
+
+      - name: Zipalign APK
+        run: |
+          $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | tail -1)/zipalign \
+            -v 4 app-unsigned.apk ScanExpired-signed.apk
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: ScanExpired-signed
+          path: ScanExpired-signed.apk
