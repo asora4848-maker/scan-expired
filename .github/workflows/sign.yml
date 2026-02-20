@@ -7,7 +7,7 @@ jobs:
   sign:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate Keystore
         run: |
@@ -21,7 +21,7 @@ jobs:
             -keypass password123 \
             -dname "CN=ScanExpired, OU=Warehouse, O=Company, L=KL, S=KL, C=MY"
 
-      - name: Download unsigned APK from artifact
+      - name: Download unsigned APK
         run: |
           curl -L -o app-unsigned.apk "https://github.com/${{ github.repository }}/raw/main/ScanExpired-unsigned.apk"
 
@@ -43,7 +43,7 @@ jobs:
             -v 4 app-unsigned.apk ScanExpired-signed.apk
 
       - name: Upload signed APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ScanExpired-signed
           path: ScanExpired-signed.apk
