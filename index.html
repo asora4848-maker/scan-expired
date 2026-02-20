@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#1a1f2e"/>
+  <link rel="manifest" href="manifest.json"/>
+  <title>Scanner Barang Expired</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap');
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b27;
+      --card: #1e2535;
+      --border: #2a3548;
+      --accent: #00d4ff;
+      --accent2: #ff6b35;
+      --success: #00ff88;
+      --danger: #ff3b5c;
+      --text: #e8edf5;
+      --muted: #6b7a99;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      padding: 16px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* Scanline effect */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,212,255,0.015) 2px,
+        rgba(0,212,255,0.015) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px 0 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    header .logo {
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--accent);
+      font-family: 'Share Tech Mono', monospace;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text);
+    }
+
+    header h1 span {
+      color: var(--accent2);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+
+    .card-title {
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-family: 'Share Tech Mono', monospace;
+      margin-bottom: 14px;
+    }
+
+    /* Upload section */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .upload-zone:hover {
+      border-color: var(--accent);
+      background: rgba(0,212,255,0.05);
+    }
+
+    .upload-zone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+
+    .upload-label {
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    .upload-label strong {
+      color: var(--accent);
+    }
+
+    #status {
+      margin-top: 12px;
+      font-size: 14px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* Scan section */
+    #scan-section { display: none; }
+
+    .item-display {
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    .item-code {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 28px;
+      color: var(--accent);
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+
+    .rack-badge {
+      display: inline-block;
+      background: rgba(255,107,53,0.15);
+      border: 1px solid var(--accent2);
+      color: var(--accent2);
+      font-size: 18px;
+      font-weight: 700;
+      padding: 6px 20px;
+      border-radius: 6px;
+      letter-spacing: 2px;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      margin: 16px 0;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .progress-bar-bg {
+      background: var(--border);
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #0099bb);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* Input */
+    .input-wrap {
+      position: relative;
+      margin: 16px 0;
+    }
+
+    #scan-input {
+      width: 100%;
+      padding: 16px 50px 16px 16px;
+      font-size: 18px;
+      font-family: 'Share Tech Mono', monospace;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      outline: none;
+      text-align: center;
+      transition: border-color 0.2s;
+      letter-spacing: 1px;
+    }
+
+    #scan-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
+    }
+
+    #scan-input:disabled {
+      opacity: 0.4;
+    }
+
+    .input-icon {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+    }
+
+    /* Result */
+    #result {
+      padding: 14px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+
+    #result.idle {
+      background: rgba(107,122,153,0.1);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    #result.success {
+      background: rgba(0,255,136,0.1);
+      color: var(--success);
+      border: 1px solid var(--success);
+      animation: pulse-green 0.4s ease;
+    }
+
+    #result.error {
+      background: rgba(255,59,92,0.1);
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      animation: shake 0.3s ease;
+    }
+
+    #result.complete {
+      background: rgba(0,212,255,0.1);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      font-size: 20px;
+      animation: pulse-blue 1s infinite;
+    }
+
+    /* Skip button */
+    #skip-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    #skip-btn:hover {
+      border-color: var(--accent2);
+      color: var(--accent2);
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 22px;
+      color: var(--text);
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* Animations */
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 0 0 rgba(0,255,136,0.4); }
+      100% { box-shadow: 0 0 0 10px rgba(0,255,136,0); }
+    }
+
+    @keyframes pulse-blue {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,255,0.2); }
+      50% { box-shadow: 0 0 0 8px rgba(0,212,255,0); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .blink {
+      animation: blink 1s step-start infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">▸ Warehouse System ◂</div>
+  <h1>SCAN <span>EXPIRED</span></h1>
+</header>
+
+<!-- Upload -->
+<div class="card" id="upload-section">
+  <div class="card-title">▸ Load Excel File</div>
+  <div class="upload-zone">
+    <input type="file" id="excel-upload" accept=".xlsx" />
+    <div class="upload-icon">📂</div>
+    <div class="upload-label">Tap untuk pilih <strong>Doc.xlsx</strong></div>
+  </div>
+  <div id="status">Sila upload fail Excel untuk mula...</div>
+</div>
+
+<!-- Scan -->
+<div class="card" id="scan-section">
+  <div class="card-title">▸ Item Semasa</div>
+  
+  <div class="item-display">
+    <div class="item-code" id="current-item">-</div>
+    <div class="rack-badge" id="rack-info">RAK: -</div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>PROGRESS</span>
+      <span id="progress-text">0 / 0</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-bar"></div>
+    </div>
+  </div>
+
+  <div class="input-wrap">
+    <input type="text" id="scan-input" placeholder="Scan barcode di sini..." autofocus autocomplete="off" />
+    <span class="input-icon">⌖</span>
+  </div>
+
+  <div id="result" class="idle">Menunggu scan<span class="blink">_</span></div>
+
+  <button id="skip-btn">⟩ Skip Item Ini</button>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-val" id="stat-done">0</div>
+      <div class="stat-label">Selesai</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-skip">0</div>
+      <div class="stat-label">Skip</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-left">0</div>
+      <div class="stat-label">Baki</div>
+    </div>
+  </div>
+</div>
+
+<!-- SheetJS embedded (fetch from CDN but cache via SW) -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+<script>
+  // ── Audio via Web Audio API (no external files needed) ──
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  let actx = null;
+
+  function getAudioCtx() {
+    if (!actx) actx = new AudioCtx();
+    return actx;
+  }
+
+  function playSuccess() {
+    try {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      [523, 659, 784, 1047].forEach((freq, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = freq;
+        o.type = 'sine';
+        g.gain.setValueAtTime(0, now + i * 0.1);
+        g.gain.linearRampToValueAtTime(0.3, now + i * 0.1 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+        o.start(now + i * 0.1);
+        o.stop(now + i * 0.1 + 0.3);
+      });
+    } catch(e) {}
+  }
+
+  function playDone() {
+    try {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      [523, 659, 784, 659, 784, 1047].forEach((freq, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = freq;
+        o.type = 'triangle';
+        g.gain.setValueAtTime(0, now + i * 0.15);
+        g.gain.linearRampToValueAtTime(0.4, now + i * 0.15 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.4);
+        o.start(now + i * 0.15);
+        o.stop(now + i * 0.15 + 0.4);
+      });
+    } catch(e) {}
+  }
+
+  function playError() {
+    try {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 200;
+      o.type = 'sawtooth';
+      g.gain.setValueAtTime(0.3, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      o.start(now); o.stop(now + 0.3);
+    } catch(e) {}
+  }
+
+  // ── State ──
+  let items = [];
+  let currentIndex = 0;
+  let statDone = 0;
+  let statSkip = 0;
+
+  // ── DOM ──
+  const uploadInput   = document.getElementById('excel-upload');
+  const statusDiv     = document.getElementById('status');
+  const scanSection   = document.getElementById('scan-section');
+  const currentItemEl = document.getElementById('current-item');
+  const rackInfoEl    = document.getElementById('rack-info');
+  const progressText  = document.getElementById('progress-text');
+  const progressBar   = document.getElementById('progress-bar');
+  const scanInput     = document.getElementById('scan-input');
+  const resultDiv     = document.getElementById('result');
+  const skipBtn       = document.getElementById('skip-btn');
+  const statDoneEl    = document.getElementById('stat-done');
+  const statSkipEl    = document.getElementById('stat-skip');
+  const statLeftEl    = document.getElementById('stat-left');
+
+  // Unlock audio on first tap
+  document.body.addEventListener('touchstart', () => { getAudioCtx(); }, { once: true });
+  document.body.addEventListener('click', () => { getAudioCtx(); }, { once: true });
+
+  // ── Excel Upload ──
+  uploadInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    statusDiv.textContent = "⏳ Memproses fail...";
+    statusDiv.style.color = "#f0a500";
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const range = XLSX.utils.decode_range(sheet['!ref']);
+
+        const pairs = [];
+        let currentCode = null;
+
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+          for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+            const cell = sheet[cellRef];
+            if (cell && cell.v) {
+              const val = String(cell.v).trim();
+              if (val.startsWith("SPIMY")) {
+                currentCode = val;
+              } else if (currentCode && /^[A-Z]{1,}-\d/.test(val)) {
+                pairs.push({ code: currentCode, rack: val });
+                currentCode = null;
+              }
+            }
+          }
+        }
+
+        if (pairs.length === 0) throw new Error("Tiada data ditemui.");
+
+        items = pairs.sort((a, b) =>
+          a.rack.localeCompare(b.rack, undefined, { numeric: true, sensitivity: 'base' })
+        );
+
+        currentIndex = 0;
+        statDone = 0;
+        statSkip = 0;
+        updateStats();
+        showCurrentItem();
+
+        statusDiv.innerHTML = `✅ <b>${items.length}</b> barang dimuatkan`;
+        statusDiv.style.color = "#00ff88";
+        scanSection.style.display = 'block';
+        scanInput.focus();
+
+      } catch (err) {
+        statusDiv.textContent = "❌ Gagal baca fail. Semak format Excel.";
+        statusDiv.style.color = "#ff3b5c";
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  // ── Show Current Item ──
+  function showCurrentItem() {
+    if (currentIndex >= items.length) {
+      currentItemEl.textContent = "🎉 SELESAI!";
+      rackInfoEl.textContent = "SEMUA BARANG DIBUANG";
+      resultDiv.className = 'complete';
+      resultDiv.innerHTML = "✅ DONE — Semua barang selesai";
+      scanInput.disabled = true;
+      skipBtn.disabled = true;
+      progressBar.style.width = '100%';
+      progressText.textContent = `${items.length} / ${items.length}`;
+      updateStats();
+      playDone();
+      return;
+    }
+
+    const item = items[currentIndex];
+    currentItemEl.textContent = item.code;
+    rackInfoEl.textContent = `RAK: ${item.rack}`;
+
+    const pct = Math.round((currentIndex / items.length) * 100);
+    progressBar.style.width = pct + '%';
+    progressText.textContent = `${currentIndex} / ${items.length}`;
+
+    resultDiv.className = 'idle';
+    resultDiv.innerHTML = 'Menunggu scan<span class="blink">_</span>';
+    updateStats();
+  }
+
+  // ── Scan Input ──
+  scanInput.addEventListener('keyup', function(e) {
+    if (e.key !== 'Enter') return;
+    if (currentIndex >= items.length) return;
+
+    const input = scanInput.value.trim().toUpperCase();
+    const expected = items[currentIndex].code.trim().toUpperCase();
+
+    if (input === expected) {
+      resultDiv.className = 'success';
+      resultDiv.textContent = "✅ BERJAYA!";
+      playSuccess();
+      statDone++;
+      setTimeout(() => {
+        currentIndex++;
+        scanInput.value = '';
+        showCurrentItem();
+      }, 1000);
+    } else {
+      resultDiv.className = 'error';
+      resultDiv.textContent = "❌ SALAH — Cuba semula";
+      playError();
+      scanInput.value = '';
+    }
+  });
+
+  // ── Skip ──
+  skipBtn.addEventListener('click', function() {
+    if (currentIndex >= items.length) return;
+    statSkip++;
+    currentIndex++;
+    scanInput.value = '';
+    showCurrentItem();
+  });
+
+  // ── Update Stats ──
+  function updateStats() {
+    statDoneEl.textContent = statDone;
+    statSkipEl.textContent = statSkip;
+    statLeftEl.textContent = Math.max(0, items.length - currentIndex);
+  }
+  // ── Service Worker ──
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+  }
+</script>
+</body>
+</html>
